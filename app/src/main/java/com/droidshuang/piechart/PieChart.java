@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -23,12 +24,13 @@ public class PieChart extends View {
     private RectF mCircleBox;
     private float mChartAngle;
     private float[] mDrawAngles;
+    private float[] mAbsoluteAngles;
     private float mOffsetTop;
     private float mOffsetBottom;
     private float mOffsetLeft;
     private float mOffsetRight;
     private DataSet dataSet;
-
+    private float mShift = 10f;
     private float mTextSize = 12f;
     private Context context;
     private List<Integer> colorList;
@@ -72,10 +74,10 @@ public class PieChart extends View {
         mStrokePaint.setStyle(Paint.Style.STROKE);
         mStrokePaint.setColor(Color.BLACK);
         List<Series> series = new ArrayList<>();
-        series.add(new Series(30f, 0));
-        series.add(new Series(9f, 1));
-        series.add(new Series(35f, 2));
-        series.add(new Series(12f, 3));
+        series.add(new Series(40f, 0));
+        series.add(new Series(10f, 1));
+        series.add(new Series(10f, 2));
+        series.add(new Series(10f, 3));
         series.add(new Series(40f, 4));
         dataSet = new DataSet(series);
         colorList = new ArrayList<>();
@@ -96,7 +98,7 @@ public class PieChart extends View {
 //        }
         drawStroke(canvas);
         drawData(canvas);
-
+        drawHightlight(canvas);
     }
 
     private void drawStroke(Canvas canvas) {
@@ -114,6 +116,9 @@ public class PieChart extends View {
         float angle = mChartAngle;
         for (int i = 0; i < dataSet.getmYVals().size(); i++) {
             mChartPaint.setColor(colorList.get(i));
+            if (i == 0) {
+                mChartPaint.setColor(Color.WHITE);
+            }
 
             canvas.drawArc(mCircleBox, angle, mDrawAngles[i], true, mChartPaint);
             angle = angle + mDrawAngles[i];
@@ -121,15 +126,58 @@ public class PieChart extends View {
 
     }
 
+    private void drawHightlight(Canvas canvas) {
+        float angle = 0f;
+        float sliceDegrees = mDrawAngles[0];
+
+        float shiftangle = (float) Math.toRadians(angle + sliceDegrees / 2f);
+
+        float xShift = mShift * (float) Math.cos(shiftangle);
+        float yShift = mShift * (float) Math.sin(shiftangle);
+        RectF highlighted = new RectF(mCircleBox.left + xShift, mCircleBox.top + yShift, mCircleBox.right + xShift, mCircleBox.bottom + yShift);
+
+        canvas.drawArc(highlighted, 0f, sliceDegrees, true, mChartPaint);
+
+    }
+
     private void calcAngles() {
         mDrawAngles = new float[dataSet.getmYVals().size()];
+        mAbsoluteAngles = new float[dataSet.getmYVals().size()];
         for (int i = 0; i < dataSet.getmYVals().size(); i++) {
+
             mDrawAngles[i] = calcAngle(dataSet.getmYVals().get(i).getmVal());
+            if (i == 0) {
+                mAbsoluteAngles[i] = mDrawAngles[0];
+            } else {
+                mAbsoluteAngles[i] = mAbsoluteAngles[i - 1] + mDrawAngles[i];
+            }
         }
     }
 
     private float calcAngle(float value) {
-
         return value / dataSet.getmYSum() * 360f;
+    }
+
+    private float distanceToCenter(float x, float y) {
+        PointF centerPoint = getCenter();
+        float xDist;
+        float yDist;
+        if (x > centerPoint.x) {
+            xDist = x - centerPoint.x;
+        } else {
+            xDist = centerPoint.x - x;
+        }
+
+        if (y > centerPoint.y) {
+            yDist = y - centerPoint.y;
+        } else {
+            yDist = centerPoint.y - y;
+        }
+        float dist = (float) Math.sqrt(Math.pow(xDist, 2.0) + Math.pow(yDist, 2.0));
+        return dist;
+    }
+
+    private PointF getCenter() {
+        return new PointF(getWidth() / 2, getHeight() / 2);
     }
 }
