@@ -30,10 +30,13 @@ public class PieChart extends View {
     private float mOffsetLeft;
     private float mOffsetRight;
     private DataSet dataSet;
-    private float mShift = 10f;
+    private float mShift = 20f;
     private float mTextSize = 12f;
     private Context context;
     private List<Integer> colorList;
+    private float radius;
+    //强调突出的序列
+    private int hightLightIndex = 0;
 
     public PieChart(Context context) {
         super(context);
@@ -74,7 +77,7 @@ public class PieChart extends View {
         mStrokePaint.setStyle(Paint.Style.STROKE);
         mStrokePaint.setColor(Color.BLACK);
         List<Series> series = new ArrayList<>();
-        series.add(new Series(40f, 0));
+        series.add(new Series(10f, 0));
         series.add(new Series(10f, 1));
         series.add(new Series(10f, 2));
         series.add(new Series(10f, 3));
@@ -101,10 +104,27 @@ public class PieChart extends View {
         drawHightlight(canvas);
     }
 
+    public float getRadius() {
+        return radius;
+    }
+
+    public void setRadius(float radius) {
+        this.radius = radius;
+    }
+
+    public int getHightLightIndex() {
+        return hightLightIndex;
+    }
+
+    public void setHightLightIndex(int hightLightIndex) {
+        this.hightLightIndex = hightLightIndex;
+    }
+
     private void drawStroke(Canvas canvas) {
         float padding = 10f;
         mOffsetRight = getWidth();
         mOffsetBottom = getHeight() / 2;
+        radius = getWidth() / 2;
         //mCircleBox = new RectF(mOffsetLeft + padding, mOffsetTop + padding, mOffsetRight - padding, mOffsetBottom - padding);
         mCircleBox = new RectF(100, 100, 500, 500);
         //     canvas.drawRect(mOffsetLeft + padding, mOffsetTop + padding, mOffsetRight - padding, mOffsetBottom - padding, mStrokePaint);
@@ -125,18 +145,28 @@ public class PieChart extends View {
         }
 
     }
-
+    //偏移圆心
     private void drawHightlight(Canvas canvas) {
+        if (hightLightIndex == -1)
+            return;
+        int index = hightLightIndex;
         float angle = 0f;
-        float sliceDegrees = mDrawAngles[0];
+        float sliceDegrees = mDrawAngles[index];
+        float chartAngle = 0f;
+        if (index == 0) {
+            chartAngle = mDrawAngles[0];
+        } else {
+            for (int i = 0; i < index; i++) {
+                chartAngle = chartAngle + mDrawAngles[i];
+            }
+        }
+        float shiftangle = 360f - chartAngle - sliceDegrees ;
 
-        float shiftangle = (float) Math.toRadians(angle + sliceDegrees / 2f);
+        float xShift = getRadius()/20 * (float) Math.cos(shiftangle);
+        float yShift = getRadius()/20 * (float) Math.sin(shiftangle);
+        RectF highlighted = new RectF(mCircleBox.left + xShift, mCircleBox.top - yShift, mCircleBox.right +xShift, mCircleBox.bottom - yShift);
 
-        float xShift = mShift * (float) Math.cos(shiftangle);
-        float yShift = mShift * (float) Math.sin(shiftangle);
-        RectF highlighted = new RectF(mCircleBox.left + xShift, mCircleBox.top + yShift, mCircleBox.right + xShift, mCircleBox.bottom + yShift);
-
-        canvas.drawArc(highlighted, 0f, sliceDegrees, true, mChartPaint);
+        canvas.drawArc(highlighted, chartAngle , sliceDegrees, true, mChartPaint);
 
     }
 
@@ -158,7 +188,7 @@ public class PieChart extends View {
         return value / dataSet.getmYSum() * 360f;
     }
 
-    private float distanceToCenter(float x, float y) {
+    public float distanceToCenter(float x, float y) {
         PointF centerPoint = getCenter();
         float xDist;
         float yDist;
@@ -175,6 +205,56 @@ public class PieChart extends View {
         }
         float dist = (float) Math.sqrt(Math.pow(xDist, 2.0) + Math.pow(yDist, 2.0));
         return dist;
+    }
+
+    public float getAngleForPoint(float x, float y) {
+        PointF c = getCenter();
+        double tx = x - c.x;
+        double ty = y - c.y;
+        double length = Math.sqrt(tx * tx + ty * ty);
+        double r = Math.asin(ty / length);
+
+        float angle = (float) Math.toDegrees(r);
+        //第一象限
+        if (x > c.x && y > c.y) {
+
+        }
+        //第四象限
+        else if (x > c.x && y < c.y) {
+            angle = 360f - angle;
+        }
+        //第二象限
+        else if (x < c.x && y > c.y) {
+            angle = angle + 90f;
+        }
+        //第三象限
+        else {
+            angle = angle + 180f;
+        }
+        if (x > c.x) {
+            angle = 360f - angle;
+        }
+        angle = angle + 90;
+
+        if (angle > 360f) {
+            angle = angle - 360f;
+        }
+
+
+        return angle;
+    }
+
+    //获取该角度所属数据的index
+    public int getIndexForAngle(float angle) {
+        List<Series> yValues = dataSet.getmYVals();
+        float chartAngle = 0f;
+        for (int i = 0; i < yValues.size(); i++) {
+            chartAngle = chartAngle + yValues.get(i).getmVal();
+            if ((360f - chartAngle) < angle) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private PointF getCenter() {
