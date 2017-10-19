@@ -37,6 +37,9 @@ public class PieChart extends View {
     private float radius;
     //强调突出的序列
     private int hightLightIndex = 0;
+    private float cx;
+    private float cy;
+
 
     public PieChart(Context context) {
         super(context);
@@ -104,6 +107,18 @@ public class PieChart extends View {
         drawHightlight(canvas);
     }
 
+    public Paint getmTextPaint() {
+        return mTextPaint;
+    }
+
+    public float getCx() {
+        return 100 + getWidth() / 2;
+    }
+
+    public float getCy() {
+        return 100 + getWidth() / 2;
+    }
+
     public float getRadius() {
         return radius;
     }
@@ -145,28 +160,32 @@ public class PieChart extends View {
         }
 
     }
+
     //偏移圆心
     private void drawHightlight(Canvas canvas) {
         if (hightLightIndex == -1)
             return;
+        XChartCalc xChartCalc = new XChartCalc();
         int index = hightLightIndex;
         float angle = 0f;
         float sliceDegrees = mDrawAngles[index];
         float chartAngle = 0f;
         if (index == 0) {
-            chartAngle = mDrawAngles[0];
+            chartAngle = 0;
         } else {
             for (int i = 0; i < index; i++) {
                 chartAngle = chartAngle + mDrawAngles[i];
             }
         }
-        float shiftangle = 360f - chartAngle - sliceDegrees ;
+        float shiftangle = 360f - chartAngle - (sliceDegrees / 2);
 
-        float xShift = getRadius()/20 * (float) Math.cos(shiftangle);
-        float yShift = getRadius()/20 * (float) Math.sin(shiftangle);
-        RectF highlighted = new RectF(mCircleBox.left + xShift, mCircleBox.top - yShift, mCircleBox.right +xShift, mCircleBox.bottom - yShift);
+        float xShift = getRadius() / 30 * (float) Math.cos(shiftangle);
+        float yShift = getRadius() / 30 * (float) Math.sin(shiftangle);
+        xChartCalc.CalcArcEndPointXY(getWidth() / 2 + 100, getWidth() / 2 + 100, getRadius() / 10, shiftangle);
+        RectF highlighted = new RectF(mCircleBox.left - xShift, mCircleBox.top - yShift, mCircleBox.right - +xShift, mCircleBox.bottom - yShift);
+       // RectF highlighted = new RectF(mCircleBox.left + (xChartCalc.getPosX() - cx), mCircleBox.top + (xChartCalc.getPosY() - cy), mCircleBox.right + (xChartCalc.getPosX() - cx), mCircleBox.bottom + (xChartCalc.getPosY() - cy));
+        canvas.drawArc(highlighted, chartAngle, sliceDegrees, true, mChartPaint);
 
-        canvas.drawArc(highlighted, chartAngle , sliceDegrees, true, mChartPaint);
 
     }
 
