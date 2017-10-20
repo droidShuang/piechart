@@ -36,7 +36,7 @@ public class PieChart extends View {
     private List<Integer> colorList;
     private float radius;
     //强调突出的序列
-    private int hightLightIndex = 0;
+    private int hightLightIndex = 3;
     private float cx;
     private float cy;
 
@@ -177,13 +177,37 @@ public class PieChart extends View {
                 chartAngle = chartAngle + mDrawAngles[i];
             }
         }
+        RectF highlighted = null;
         float shiftangle = 360f - chartAngle - (sliceDegrees / 2);
+        if (shiftangle < 0) {
+            shiftangle += 360f;
+        }
+        float shiftLength = 10f;
+        if (shiftangle <= 90) {
+            int xShift = (int) (shiftLength * (Math.cos(Math.toRadians(shiftangle))));
+            int yShift = (int) (shiftLength * (Math.sin(Math.toRadians(shiftangle))));
+            highlighted = new RectF(mCircleBox.left + xShift, mCircleBox.top + yShift, mCircleBox.right + xShift, mCircleBox.bottom + yShift);
+        } else if (shiftangle > 90 && shiftangle <= 180) {
+            shiftangle = 180 - shiftangle;
+            int xShift = (int) (shiftLength * (Math.cos(Math.toRadians(shiftangle))));
+            int yShift = (int) (shiftLength * (Math.sin(Math.toRadians(shiftangle))));
+            highlighted = new RectF(mCircleBox.left - xShift, mCircleBox.top + yShift, mCircleBox.right - xShift, mCircleBox.bottom + yShift);
+        } else if (shiftangle > 180 && shiftangle <= 270) {
+            shiftangle = 270 - shiftangle;
+            int xShift = (int) (shiftLength * (Math.cos(Math.toRadians(shiftangle))));
+            int yShift = (int) (shiftLength * (Math.sin(Math.toRadians(shiftangle))));
+            highlighted = new RectF(mCircleBox.left - xShift, mCircleBox.top + yShift, mCircleBox.right - xShift, mCircleBox.bottom + yShift);
+        } else if (shiftangle > 270 && shiftangle <= 360) {
+            shiftangle = 360 - shiftangle;
+            int xShift = (int) (shiftLength * (Math.cos(Math.toRadians(shiftangle))));
+            int yShift = (int) (shiftLength * (Math.sin(Math.toRadians(shiftangle))));
+            highlighted = new RectF(mCircleBox.left + xShift, mCircleBox.top - yShift, mCircleBox.right + xShift, mCircleBox.bottom - yShift);
+        }
 
-        float xShift = getRadius() / 30 * (float) Math.cos(shiftangle);
-        float yShift = getRadius() / 30 * (float) Math.sin(shiftangle);
+
         xChartCalc.CalcArcEndPointXY(getWidth() / 2 + 100, getWidth() / 2 + 100, getRadius() / 10, shiftangle);
-        RectF highlighted = new RectF(mCircleBox.left - xShift, mCircleBox.top - yShift, mCircleBox.right - +xShift, mCircleBox.bottom - yShift);
-       // RectF highlighted = new RectF(mCircleBox.left + (xChartCalc.getPosX() - cx), mCircleBox.top + (xChartCalc.getPosY() - cy), mCircleBox.right + (xChartCalc.getPosX() - cx), mCircleBox.bottom + (xChartCalc.getPosY() - cy));
+
+        // RectF highlighted = new RectF(mCircleBox.left + (xChartCalc.getPosX() - cx), mCircleBox.top + (xChartCalc.getPosY() - cy), mCircleBox.right + (xChartCalc.getPosX() - cx), mCircleBox.bottom + (xChartCalc.getPosY() - cy));
         canvas.drawArc(highlighted, chartAngle, sliceDegrees, true, mChartPaint);
 
 
@@ -227,38 +251,54 @@ public class PieChart extends View {
     }
 
     public float getAngleForPoint(float x, float y) {
-        PointF c = getCenter();
-        double tx = x - c.x;
-        double ty = y - c.y;
-        double length = Math.sqrt(tx * tx + ty * ty);
-        double r = Math.asin(ty / length);
-
-        float angle = (float) Math.toDegrees(r);
-        //第一象限
-        if (x > c.x && y > c.y) {
-
+//        PointF c = getCenter();
+//        double tx = x - c.x;
+//        double ty = y - c.y;
+//        double length = Math.sqrt(tx * tx + ty * ty);
+//        double r = Math.asin(ty / length);
+//
+//        float angle = (float) Math.toDegrees(r);
+//        //第一象限
+//        if (x > c.x && y > c.y) {
+//
+//        }
+//        //第四象限
+//        else if (x > c.x && y < c.y) {
+//            angle = 360f - angle;
+//        }
+//        //第二象限
+//        else if (x < c.x && y > c.y) {
+//            angle = angle + 90f;
+//        }
+//        //第三象限
+//        else {
+//            angle = angle + 180f;
+//        }
+//        if (x > c.x) {
+//            angle = 360f - angle;
+//        }
+//        angle = angle + 90;
+//
+//        if (angle > 360f) {
+//            angle = angle - 360f;
+//        }
+        float angle = 0;
+        // 第一象限
+        if (x >= getMeasuredWidth() / 2 && y >= getMeasuredHeight() / 2) {
+            angle = (int) (Math.atan((y - getMeasuredHeight() / 2) * 1.0f / (x - getMeasuredWidth() / 2)) * 180 / Math.PI);
         }
-        //第四象限
-        else if (x > c.x && y < c.y) {
-            angle = 360f - angle;
+        // 第二象限
+        if (x <= getMeasuredWidth() / 2 && y >= getMeasuredHeight() / 2) {
+            angle = (int) (Math.atan((getMeasuredWidth() / 2 - x) / (y - getMeasuredHeight() / 2)) * 180 / Math.PI + 90);
         }
-        //第二象限
-        else if (x < c.x && y > c.y) {
-            angle = angle + 90f;
+        // 第三象限
+        if (x <= getMeasuredWidth() / 2 && y <= getMeasuredHeight() / 2) {
+            angle = (int) (Math.atan((getMeasuredHeight() / 2 - y) / (getMeasuredWidth() / 2 - x)) * 180 / Math.PI + 180);
         }
-        //第三象限
-        else {
-            angle = angle + 180f;
+        // 第四象限
+        if (x >= getMeasuredWidth() / 2 && y <= getMeasuredHeight() / 2) {
+            angle = (int) (Math.atan((x - getMeasuredWidth() / 2) / (getMeasuredHeight() / 2 - y)) * 180 / Math.PI + 270);
         }
-        if (x > c.x) {
-            angle = 360f - angle;
-        }
-        angle = angle + 90;
-
-        if (angle > 360f) {
-            angle = angle - 360f;
-        }
-
 
         return angle;
     }
